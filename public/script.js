@@ -30,32 +30,40 @@ function insertSampleText() {
 }
 
 function submitData(e) {
+    e.preventDefault(); // Prevent the default form submission
+
     submitButton.classList.add("submit-button--loading");
 
     const text_to_summarize = textArea.value;
 
-    const myHeaders = new Headers();
-    myHeaders.append("Content-Type", "application/json");
-    myHeaders.append("Authorization", "Bearer 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");
-
-    const raw = JSON.stringify({
-        "text_to_summarize": text_to_summarize
-    });
-
     const requestOptions = {
         method: "POST",
-        headers: myHeaders,
-        body: raw,
+        headers: {
+            "Content-Type": "application/json",
+            "Authorization": "Bearer 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" // Replace with your actual token
+        },
+        body: JSON.stringify({
+            "inputs": text_to_summarize,
+            "parameters": { "max_length": 100, "min_length": 30 }
+        }),
         redirect: "follow"
     };
 
-    fetch('/summarize', requestOptions)
-        .then(response => response.text())
-        .then(summary => {
-            summarizedTextArea.value = summary;
+    fetch('https://api-inference.huggingface.co/models/facebook/bart-large-cnn', requestOptions)
+        .then(response => {
+            if (!response.ok) {
+                throw new Error('Network response was not ok ' + response.statusText);
+            }
+            return response.json(); // Parse response as JSON
+        })
+        .then(data => {
+            summarizedTextArea.value = data[0].summary_text; // Adjust based on API response structure
             submitButton.classList.remove("submit-button--loading");
         })
         .catch(error => {
-            console.log(error.message);
+            console.error('There was a problem with the fetch operation:', error);
+            summarizedTextArea.value = "An error occurred. Please try again.";
+            submitButton.classList.remove("submit-button--loading");
         });
 }
+
